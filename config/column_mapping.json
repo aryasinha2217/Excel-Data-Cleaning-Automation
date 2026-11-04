@@ -1,0 +1,8 @@
+
+{
+    "ID": "Customer_ID",
+    "Full_Name": "Name",
+    "Email_Address": "Email",
+    "Mobile": "Phone",
+    "Location": "City"
+}

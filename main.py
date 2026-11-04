@@ -2,6 +2,7 @@
 import pandas as pd
 from pathlib import Path
 import argparse
+import json
 
 def main():
 
@@ -45,6 +46,37 @@ def main():
         raise ValueError(
             "Unsupported file format. Please use CSV or XLSX."
         )
+    
+    if file_extension == ".csv":
+        df = pd.read_csv(input_file)
+
+    elif file_extension == ".xlsx":
+     df = pd.read_excel(input_file)
+
+    else:
+        raise ValueError(
+        "Unsupported file format. Please use CSV or XLSX."
+    )
+
+    # ==========================================
+    # STAGE 10: LOAD COLUMN MAPPING
+    # ==========================================
+
+    mapping_file = Path("config/column_mapping.json")
+
+    if mapping_file.exists():
+        with open(mapping_file, "r", encoding="utf-8") as file:
+            column_mapping = json.load(file)
+
+        df = df.rename(columns=column_mapping)
+
+        print("\nColumn mapping loaded successfully!")
+
+    else:
+        print("\nNo column mapping file found. Using original columns.")
+
+    print("\nColumns after mapping:")
+    print(df.columns.tolist())
 
     # ==========================================
     # STAGE 8: INPUT DATA VALIDATION
@@ -136,11 +168,16 @@ def main():
     # Clean email addresses
     df["Email"] = df["Email"].str.strip().str.lower()
 
+    
     # Clean phone numbers
+    # Convert phone numbers to strings first
+    df["Phone"] = df["Phone"].astype("string")
+
     df["Phone"] = (
         df["Phone"]
         .str.replace(r"[\s()-]", "", regex=True)
     )
+
 
     # Standardise city names
     df["City"] = df["City"].str.strip().str.title()
