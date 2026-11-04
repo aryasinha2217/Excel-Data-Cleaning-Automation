@@ -131,3 +131,26 @@ print("\n========== VALIDATION RESULTS ==========")
 
 print("Invalid emails:", (~df["Email_Valid"]).sum())
 print("Invalid phone numbers:", (~df["Phone_Valid"]).sum())
+
+# ==========================================
+# STAGE 5: EXPORT CLEANED DATA TO EXCEL
+# ==========================================
+
+output_file = "output/cleaned_customers.xlsx"
+
+with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
+    df.to_excel(writer, sheet_name="All Records", index=False)
+    complete_records.to_excel(
+        writer,
+        sheet_name="Complete Records",
+        index=False
+    )
+    incomplete_records.to_excel(
+        writer,
+        sheet_name="Incomplete Records",
+        index=False
+    )
+
+print("\n========== EXCEL EXPORT ==========")
+print("Excel file successfully created!")
+print("Saved at:", output_file)
