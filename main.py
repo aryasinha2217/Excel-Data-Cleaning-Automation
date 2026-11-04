@@ -1,21 +1,30 @@
 
 import pandas as pd
 from pathlib import Path
-import sys
+import argparse
 
 def main():
 
+    
     # ==========================================
-    # INPUT FILE HANDLING
+    # COMMAND LINE INTERFACE
     # ==========================================
 
-    # Use a file path supplied by the user.
-    # If no path is supplied, use the sample CSV.
+    parser = argparse.ArgumentParser(
+        description="CleanSheet - Customer Data Cleaning Automation"
+    )
 
-    if len(sys.argv) > 1:
-        input_file = Path(sys.argv[1])
-    else:
-        input_file = Path("data/customers.csv")
+    parser.add_argument(
+        "input_file",
+        nargs="?",
+        default="data/customers.csv",
+        help="Path to the input CSV or XLSX file"
+    )
+
+    args = parser.parse_args()
+
+    input_file = Path(args.input_file)
+
 
     # Check whether the file exists
     if not input_file.exists():
