@@ -1,12 +1,45 @@
 
 import pandas as pd
+from pathlib import Path
+import sys
 
-# Step 1: Define the input file
-input_file = "data/customers.csv"
 
-# Step 2: Read the CSV file
-df = pd.read_csv(input_file)
+# ==========================================
+# INPUT FILE HANDLING
+# ==========================================
+
+# Use a file path supplied by the user.
+# If no path is supplied, use the sample CSV.
+
+if len(sys.argv) > 1:
+    input_file = Path(sys.argv[1])
+else:
+    input_file = Path("data/customers.csv")
+
+# Check whether the file exists
+if not input_file.exists():
+    raise FileNotFoundError(
+        f"Input file not found: {input_file}"
+    )
+
+# Read the file based on its extension
+file_extension = input_file.suffix.lower()
+
+if file_extension == ".csv":
+    df = pd.read_csv(input_file)
+
+elif file_extension == ".xlsx":
+    df = pd.read_excel(input_file)
+
+else:
+    raise ValueError(
+        "Unsupported file format. Please use CSV or XLSX."
+    )
+
 original_records = len(df)
+
+print(f"\nInput file loaded: {input_file}")
+print(f"Original records: {original_records}")
 
 # Step 3: Display the original data
 print("\n========== CUSTOMER DATA ==========")
@@ -139,6 +172,15 @@ print("Invalid phone numbers:", (~df["Phone_Valid"]).sum())
 # ==========================================
 
 output_file = "output/cleaned_customers.xlsx"
+# Create output directory if it doesn't exist
+output_dir = Path("output")
+output_dir.mkdir(parents=True, exist_ok=True)
+
+# Generate filenames based on the input filename
+file_name = input_file.stem
+
+output_file = output_dir / f"{file_name}_cleaned.xlsx"
+report_file = output_dir / f"{file_name}_report.txt"
 
 with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
     df.to_excel(writer, sheet_name="All Records", index=False)
@@ -168,7 +210,7 @@ incomplete_count = len(incomplete_records)
 invalid_email_count = (~df["Email_Valid"]).sum()
 invalid_phone_count = (~df["Phone_Valid"]).sum()
 
-report_file = "output/cleaning_report.txt"
+
 
 with open(report_file, "w") as report:
     report.write("========== CLEANSHEET REPORT ==========\n\n")
