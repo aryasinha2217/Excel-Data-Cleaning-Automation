@@ -6,6 +6,7 @@ input_file = "data/customers.csv"
 
 # Step 2: Read the CSV file
 df = pd.read_csv(input_file)
+original_records = len(df)
 
 # Step 3: Display the original data
 print("\n========== CUSTOMER DATA ==========")
@@ -29,6 +30,7 @@ duplicates = df[
     df["Email"].notna() &
     df["Email"].str.strip().str.lower().duplicated()
 ]
+duplicate_count = len(duplicates)
 
 print("Duplicate records found:")
 print(duplicates)
@@ -154,3 +156,36 @@ with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
 print("\n========== EXCEL EXPORT ==========")
 print("Excel file successfully created!")
 print("Saved at:", output_file)
+
+# ==========================================
+# STAGE 6: GENERATE CLEANING REPORT
+# ==========================================
+
+remaining_records = len(df)
+complete_count = len(complete_records)
+incomplete_count = len(incomplete_records)
+
+invalid_email_count = (~df["Email_Valid"]).sum()
+invalid_phone_count = (~df["Phone_Valid"]).sum()
+
+report_file = "output/cleaning_report.txt"
+
+with open(report_file, "w") as report:
+    report.write("========== CLEANSHEET REPORT ==========\n\n")
+
+    report.write(f"Original records: {original_records}\n")
+    report.write(f"Duplicate records removed: {duplicate_count}\n")
+    report.write(f"Records after duplicate removal: {remaining_records}\n\n")
+
+    report.write(f"Complete records: {complete_count}\n")
+    report.write(f"Incomplete records: {incomplete_count}\n\n")
+
+    report.write(f"Invalid email addresses: {invalid_email_count}\n")
+    report.write(f"Invalid phone numbers: {invalid_phone_count}\n\n")
+
+    report.write(f"Excel output: {output_file}\n\n")
+
+    report.write("========== CLEANING COMPLETED ==========\n")
+
+print("\nCleaning report successfully created!")
+print("Saved at:", report_file)
