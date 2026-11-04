@@ -3,231 +3,271 @@ import pandas as pd
 from pathlib import Path
 import sys
 
+def main():
 
-# ==========================================
-# INPUT FILE HANDLING
-# ==========================================
+    # ==========================================
+    # INPUT FILE HANDLING
+    # ==========================================
 
-# Use a file path supplied by the user.
-# If no path is supplied, use the sample CSV.
+    # Use a file path supplied by the user.
+    # If no path is supplied, use the sample CSV.
 
-if len(sys.argv) > 1:
-    input_file = Path(sys.argv[1])
-else:
-    input_file = Path("data/customers.csv")
+    if len(sys.argv) > 1:
+        input_file = Path(sys.argv[1])
+    else:
+        input_file = Path("data/customers.csv")
 
-# Check whether the file exists
-if not input_file.exists():
-    raise FileNotFoundError(
-        f"Input file not found: {input_file}"
+    # Check whether the file exists
+    if not input_file.exists():
+        raise FileNotFoundError(
+            f"Input file not found: {input_file}"
+        )
+
+    # Read the file based on its extension
+    file_extension = input_file.suffix.lower()
+
+    if file_extension == ".csv":
+        df = pd.read_csv(input_file)
+
+    elif file_extension == ".xlsx":
+        df = pd.read_excel(input_file)
+
+    else:
+        raise ValueError(
+            "Unsupported file format. Please use CSV or XLSX."
+        )
+
+    # ==========================================
+    # STAGE 8: INPUT DATA VALIDATION
+    # ==========================================
+
+    # Remove accidental spaces around column names
+    df.columns = df.columns.str.strip()
+
+    # Columns required by CleanSheet
+    required_columns = [
+        "Customer_ID",
+        "Name",
+        "Email",
+        "Phone",
+        "City"
+    ]
+
+    # Identify missing columns
+    missing_columns = [
+        column for column in required_columns
+        if column not in df.columns
+    ]
+
+    if missing_columns:
+        raise ValueError(
+            f"Invalid input file. Missing required columns: "
+            f"{', '.join(missing_columns)}"
+        )
+
+    print("Input file structure validated successfully!")
+    if df.empty:
+        raise ValueError(
+            "The input file contains no customer records."
+        )
+    original_records = len(df)
+
+    print(f"\nInput file loaded: {input_file}")
+    print(f"Original records: {original_records}")
+
+    # Step 3: Display the original data
+    print("\n========== CUSTOMER DATA ==========")
+    print(df)
+
+    # Step 4: Display dataset information
+    print("\n========== DATASET INFORMATION ==========")
+    print("Total records:", len(df))
+    print("Total columns:", len(df.columns))
+
+    # Step 5: Check missing values
+    print("\n========== MISSING VALUES ==========")
+    print(df.isnull().sum())
+
+    # Step 6: Identify duplicate customers
+
+    print("\n========== DUPLICATE RECORDS ==========")
+
+    # Find duplicate email addresses
+    duplicates = df[
+        df["Email"].notna() &
+        df["Email"].str.strip().str.lower().duplicated()
+    ]
+    duplicate_count = len(duplicates)
+
+    print("Duplicate records found:")
+    print(duplicates)
+
+    print("Total duplicates:", len(duplicates))
+
+    # Step 7: Remove duplicate customers
+
+    df["Email"] = df["Email"].str.strip().str.lower()
+
+    df = df[
+        df["Email"].isna() |
+        ~df["Email"].duplicated(keep="first")
+    ]
+
+    print("\n========== AFTER DUPLICATE REMOVAL ==========")
+    print("Remaining records:", len(df))
+    print(df)
+
+    # Step 8: Data Standardisation
+
+    print("\n========== DATA STANDARDISATION ==========")
+
+    # Clean customer names
+    df["Name"] = df["Name"].str.strip().str.title()
+
+    # Clean email addresses
+    df["Email"] = df["Email"].str.strip().str.lower()
+
+    # Clean phone numbers
+    df["Phone"] = (
+        df["Phone"]
+        .str.replace(r"[\s()-]", "", regex=True)
     )
 
-# Read the file based on its extension
-file_extension = input_file.suffix.lower()
+    # Standardise city names
+    df["City"] = df["City"].str.strip().str.title()
 
-if file_extension == ".csv":
-    df = pd.read_csv(input_file)
+    print("\nCleaned customer data:")
+    print(df)
 
-elif file_extension == ".xlsx":
-    df = pd.read_excel(input_file)
+    # Step 9: Handle missing values
 
-else:
-    raise ValueError(
-        "Unsupported file format. Please use CSV or XLSX."
-    )
+    print("\n========== MISSING VALUE HANDLING ==========")
 
-original_records = len(df)
+    # Convert empty strings and whitespace-only values to missing values
+    df = df.replace(r"^\s*$", pd.NA, regex=True)
 
-print(f"\nInput file loaded: {input_file}")
-print(f"Original records: {original_records}")
+    # Define required columns
+    required_columns = ["Name", "Email", "Phone", "City"]
 
-# Step 3: Display the original data
-print("\n========== CUSTOMER DATA ==========")
-print(df)
+    # Identify incomplete records
+    incomplete_records = df[
+        df[required_columns].isna().any(axis=1)
+    ]
 
-# Step 4: Display dataset information
-print("\n========== DATASET INFORMATION ==========")
-print("Total records:", len(df))
-print("Total columns:", len(df.columns))
+    # Identify complete records
+    complete_records = df[
+        df[required_columns].notna().all(axis=1)
+    ]
 
-# Step 5: Check missing values
-print("\n========== MISSING VALUES ==========")
-print(df.isnull().sum())
+    # Display results
+    print("Complete records:", len(complete_records))
+    print("Incomplete records:", len(incomplete_records))
 
-# Step 6: Identify duplicate customers
+    print("\nINCOMPLETE CUSTOMER RECORDS:")
+    print(incomplete_records)
 
-print("\n========== DUPLICATE RECORDS ==========")
+    print("\nCOMPLETE CUSTOMER RECORDS:")
+    print(complete_records)
 
-# Find duplicate email addresses
-duplicates = df[
-    df["Email"].notna() &
-    df["Email"].str.strip().str.lower().duplicated()
-]
-duplicate_count = len(duplicates)
+    # Step 10: Validate email and phone numbers
 
-print("Duplicate records found:")
-print(duplicates)
+    import re
 
-print("Total duplicates:", len(duplicates))
+    def is_valid_email(email):
+        if pd.isna(email):
+            return False
 
-# Step 7: Remove duplicate customers
+        pattern = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
 
-df["Email"] = df["Email"].str.strip().str.lower()
+        return bool(re.match(pattern, str(email)))
 
-df = df.drop_duplicates(
-    subset=["Email"],
-    keep="first"
-)
 
-print("\n========== AFTER DUPLICATE REMOVAL ==========")
-print("Remaining records:", len(df))
-print(df)
+    def is_valid_phone(phone):
+        if pd.isna(phone):
+            return False
 
-# Step 8: Data Standardisation
+        # Our sample project uses 10-digit Indian phone numbers
+        return bool(re.fullmatch(r"\d{10}", str(phone)))
 
-print("\n========== DATA STANDARDISATION ==========")
 
-# Clean customer names
-df["Name"] = df["Name"].str.strip().str.title()
+    # Check email validity
+    df["Email_Valid"] = df["Email"].apply(is_valid_email)
 
-# Clean email addresses
-df["Email"] = df["Email"].str.strip().str.lower()
+    # Check phone validity
+    df["Phone_Valid"] = df["Phone"].apply(is_valid_phone)
 
-# Clean phone numbers
-df["Phone"] = (
-    df["Phone"]
-    .str.replace(r"[\s()-]", "", regex=True)
-)
+    print("\n========== VALIDATION RESULTS ==========")
 
-# Standardise city names
-df["City"] = df["City"].str.strip().str.title()
+    print("Invalid emails:", (~df["Email_Valid"]).sum())
+    print("Invalid phone numbers:", (~df["Phone_Valid"]).sum())
 
-print("\nCleaned customer data:")
-print(df)
+    # ==========================================
+    # STAGE 5: EXPORT CLEANED DATA TO EXCEL
+    # ==========================================
 
-# Step 9: Handle missing values
+    output_file = "output/cleaned_customers.xlsx"
+    # Create output directory if it doesn't exist
+    output_dir = Path("output")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-print("\n========== MISSING VALUE HANDLING ==========")
+    # Generate filenames based on the input filename
+    file_name = input_file.stem
 
-# Convert empty strings and whitespace-only values to missing values
-df = df.replace(r"^\s*$", pd.NA, regex=True)
+    output_file = output_dir / f"{file_name}_cleaned.xlsx"
+    report_file = output_dir / f"{file_name}_report.txt"
 
-# Define required columns
-required_columns = ["Name", "Email", "Phone", "City"]
+    with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="All Records", index=False)
+        complete_records.to_excel(
+            writer,
+            sheet_name="Complete Records",
+            index=False
+        )
+        incomplete_records.to_excel(
+            writer,
+            sheet_name="Incomplete Records",
+            index=False
+        )
 
-# Identify incomplete records
-incomplete_records = df[
-    df[required_columns].isna().any(axis=1)
-]
+    print("\n========== EXCEL EXPORT ==========")
+    print("Excel file successfully created!")
+    print("Saved at:", output_file)
 
-# Identify complete records
-complete_records = df[
-    df[required_columns].notna().all(axis=1)
-]
+    # ==========================================
+    # STAGE 6: GENERATE CLEANING REPORT
+    # ==========================================
 
-# Display results
-print("Complete records:", len(complete_records))
-print("Incomplete records:", len(incomplete_records))
+    remaining_records = len(df)
+    complete_count = len(complete_records)
+    incomplete_count = len(incomplete_records)
 
-print("\nINCOMPLETE CUSTOMER RECORDS:")
-print(incomplete_records)
+    invalid_email_count = (~df["Email_Valid"]).sum()
+    invalid_phone_count = (~df["Phone_Valid"]).sum()
 
-print("\nCOMPLETE CUSTOMER RECORDS:")
-print(complete_records)
 
-# Step 10: Validate email and phone numbers
 
-import re
+    with open(report_file, "w") as report:
+        report.write("========== CLEANSHEET REPORT ==========\n\n")
 
-def is_valid_email(email):
-    if pd.isna(email):
-        return False
+        report.write(f"Original records: {original_records}\n")
+        report.write(f"Duplicate records removed: {duplicate_count}\n")
+        report.write(f"Records after duplicate removal: {remaining_records}\n\n")
 
-    pattern = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+        report.write(f"Complete records: {complete_count}\n")
+        report.write(f"Incomplete records: {incomplete_count}\n\n")
 
-    return bool(re.match(pattern, str(email)))
+        report.write(f"Invalid email addresses: {invalid_email_count}\n")
+        report.write(f"Invalid phone numbers: {invalid_phone_count}\n\n")
 
+        report.write(f"Excel output: {output_file}\n\n")
 
-def is_valid_phone(phone):
-    if pd.isna(phone):
-        return False
+        report.write("========== CLEANING COMPLETED ==========\n")
 
-    # Our sample project uses 10-digit Indian phone numbers
-    return bool(re.fullmatch(r"\d{10}", str(phone)))
-
-
-# Check email validity
-df["Email_Valid"] = df["Email"].apply(is_valid_email)
-
-# Check phone validity
-df["Phone_Valid"] = df["Phone"].apply(is_valid_phone)
-
-print("\n========== VALIDATION RESULTS ==========")
-
-print("Invalid emails:", (~df["Email_Valid"]).sum())
-print("Invalid phone numbers:", (~df["Phone_Valid"]).sum())
-
-# ==========================================
-# STAGE 5: EXPORT CLEANED DATA TO EXCEL
-# ==========================================
-
-output_file = "output/cleaned_customers.xlsx"
-# Create output directory if it doesn't exist
-output_dir = Path("output")
-output_dir.mkdir(parents=True, exist_ok=True)
-
-# Generate filenames based on the input filename
-file_name = input_file.stem
-
-output_file = output_dir / f"{file_name}_cleaned.xlsx"
-report_file = output_dir / f"{file_name}_report.txt"
-
-with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
-    df.to_excel(writer, sheet_name="All Records", index=False)
-    complete_records.to_excel(
-        writer,
-        sheet_name="Complete Records",
-        index=False
-    )
-    incomplete_records.to_excel(
-        writer,
-        sheet_name="Incomplete Records",
-        index=False
-    )
-
-print("\n========== EXCEL EXPORT ==========")
-print("Excel file successfully created!")
-print("Saved at:", output_file)
-
-# ==========================================
-# STAGE 6: GENERATE CLEANING REPORT
-# ==========================================
-
-remaining_records = len(df)
-complete_count = len(complete_records)
-incomplete_count = len(incomplete_records)
-
-invalid_email_count = (~df["Email_Valid"]).sum()
-invalid_phone_count = (~df["Phone_Valid"]).sum()
-
-
-
-with open(report_file, "w") as report:
-    report.write("========== CLEANSHEET REPORT ==========\n\n")
-
-    report.write(f"Original records: {original_records}\n")
-    report.write(f"Duplicate records removed: {duplicate_count}\n")
-    report.write(f"Records after duplicate removal: {remaining_records}\n\n")
-
-    report.write(f"Complete records: {complete_count}\n")
-    report.write(f"Incomplete records: {incomplete_count}\n\n")
-
-    report.write(f"Invalid email addresses: {invalid_email_count}\n")
-    report.write(f"Invalid phone numbers: {invalid_phone_count}\n\n")
-
-    report.write(f"Excel output: {output_file}\n\n")
-
-    report.write("========== CLEANING COMPLETED ==========\n")
-
-print("\nCleaning report successfully created!")
-print("Saved at:", report_file)
+    print("\nCleaning report successfully created!")
+    print("Saved at:", report_file)
+if __name__ == "__main__":
+    try:
+        main()
+    except (FileNotFoundError, ValueError) as error:
+        print(f"\nERROR: {error}")
+        print("Please check your input file and try again.")
