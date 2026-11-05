@@ -125,3 +125,17 @@ This allows input files with different column headings to be mapped to the requi
 ## Author
 
 Developed as a Python portfolio project to demonstrate data cleaning and automation skills.
+
+## Screenshots
+
+### 1. Data Cleaning Process
+![Terminal Cleaning](screenshots/terminal cleaning.png)
+
+### 2. Cleaning Summary
+![Terminal Summary](screenshots/terminal summary.png)
+
+### 3. Excel Output
+![Excel Output](screenshots/excel output.png)
+
+### 4. Column Mapping Configuration
+![Column Mapping](screenshots/column mapping.png)
