@@ -60,23 +60,32 @@ def main():
 
     # ==========================================
     # STAGE 10: LOAD COLUMN MAPPING
-    # ==========================================
-
+    # ========================================== 
     mapping_file = Path("config/column_mapping.json")
 
     if mapping_file.exists():
-        with open(mapping_file, "r", encoding="utf-8") as file:
-            column_mapping = json.load(file)
+        try:
+            with open(mapping_file, "r", encoding="utf-8") as file:
+                column_mapping = json.load(file)
 
-        df = df.rename(columns=column_mapping)
+            if not isinstance(column_mapping, dict):
+                raise ValueError(
+                    "Column mapping must be a JSON object."
+                )
 
-        print("\nColumn mapping loaded successfully!")
+            df = df.rename(columns=column_mapping)
+
+            print("\nColumn mapping loaded successfully!")
+
+        except json.JSONDecodeError:
+            raise ValueError(
+                "Invalid JSON configuration. "
+                "Please check config/column_mapping.json."
+            )
 
     else:
         print("\nNo column mapping file found. Using original columns.")
 
-    print("\nColumns after mapping:")
-    print(df.columns.tolist())
 
     # ==========================================
     # STAGE 8: INPUT DATA VALIDATION
