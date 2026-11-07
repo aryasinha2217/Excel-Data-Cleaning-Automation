@@ -1,9 +1,58 @@
-
+import re
 import pandas as pd
 from pathlib import Path
 import argparse
 import json
 
+def remove_duplicate_emails(df):
+    df = df.copy()
+
+    # Standardise email addresses
+    df["Email"] = df["Email"].str.strip().str.lower()
+
+    # Keep the first occurrence and preserve missing emails
+    df = df[
+        df["Email"].isna() |
+        ~df["Email"].duplicated(keep="first")
+    ]
+
+    return df
+
+def is_valid_email(email):
+        if pd.isna(email):
+            return False
+
+        pattern = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+
+        return bool(re.match(pattern, str(email)))
+
+
+def is_valid_phone(phone):
+        if pd.isna(phone):
+            return False
+
+        # Our sample project uses 10-digit Indian phone numbers
+        return bool(re.fullmatch(r"\d{10}", str(phone)))
+
+def split_complete_incomplete(df):
+    df = df.copy()
+
+    # Convert empty strings and spaces to missing values
+    df = df.replace(r"^\s*$", pd.NA, regex=True)
+
+    # Required customer information
+    required_columns = ["Name", "Email", "Phone", "City"]
+
+    # Separate complete and incomplete records
+    incomplete_records = df[
+        df[required_columns].isna().any(axis=1)
+    ]
+
+    complete_records = df[
+        df[required_columns].notna().all(axis=1)
+    ]
+
+    return df, complete_records, incomplete_records
 def main():
 
     
@@ -47,16 +96,6 @@ def main():
             "Unsupported file format. Please use CSV or XLSX."
         )
     
-    if file_extension == ".csv":
-        df = pd.read_csv(input_file)
-
-    elif file_extension == ".xlsx":
-     df = pd.read_excel(input_file)
-
-    else:
-        raise ValueError(
-        "Unsupported file format. Please use CSV or XLSX."
-    )
 
     # ==========================================
     # STAGE 10: LOAD COLUMN MAPPING
@@ -154,14 +193,7 @@ def main():
 
     print("Total duplicates:", len(duplicates))
 
-    # Step 7: Remove duplicate customers
-
-    df["Email"] = df["Email"].str.strip().str.lower()
-
-    df = df[
-        df["Email"].isna() |
-        ~df["Email"].duplicated(keep="first")
-    ]
+    df = remove_duplicate_emails(df)
 
     print("\n========== AFTER DUPLICATE REMOVAL ==========")
     print("Remaining records:", len(df))
@@ -198,21 +230,7 @@ def main():
 
     print("\n========== MISSING VALUE HANDLING ==========")
 
-    # Convert empty strings and whitespace-only values to missing values
-    df = df.replace(r"^\s*$", pd.NA, regex=True)
-
-    # Define required columns
-    required_columns = ["Name", "Email", "Phone", "City"]
-
-    # Identify incomplete records
-    incomplete_records = df[
-        df[required_columns].isna().any(axis=1)
-    ]
-
-    # Identify complete records
-    complete_records = df[
-        df[required_columns].notna().all(axis=1)
-    ]
+    df, complete_records, incomplete_records = split_complete_incomplete(df)
 
     # Display results
     print("Complete records:", len(complete_records))
@@ -226,23 +244,8 @@ def main():
 
     # Step 10: Validate email and phone numbers
 
-    import re
 
-    def is_valid_email(email):
-        if pd.isna(email):
-            return False
-
-        pattern = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
-
-        return bool(re.match(pattern, str(email)))
-
-
-    def is_valid_phone(phone):
-        if pd.isna(phone):
-            return False
-
-        # Our sample project uses 10-digit Indian phone numbers
-        return bool(re.fullmatch(r"\d{10}", str(phone)))
+    
 
 
     # Check email validity
