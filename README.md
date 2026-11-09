@@ -26,18 +26,27 @@ It helps remove duplicate records, standardise customer information, identify mi
 
 ## Project Structure
 
-```text
 CleanSheet/
 ├── config/
 │   └── column_mapping.json
 ├── data/
-│   └── customers.csv
+│   ├── customers.csv
+│   ├── alternative_customers.csv
+│   └── customers.xlsx
 ├── output/
+├── screenshots/
+│   ├── terminal-cleaning.png
+│   ├── terminal-summary.png
+│   ├── excel-output.png
+│   ├── excel-complete-records.png
+│   ├── excel-incomplete-records.png
+│   └── column-mapping.png
+├── tests/
+│   └── test_cleaning.py
 ├── main.py
 ├── requirements.txt
 ├── README.md
 └── .gitignore
-```
 
 ## Installation
 
@@ -100,6 +109,24 @@ CleanSheet automatically generates:
 
 Generated files are saved inside the `output/` directory.
 
+## Running Tests
+
+CleanSheet includes automated tests to verify its data cleaning functions.
+
+Install pytest:
+
+```bash
+pip install pytest
+```
+
+Run the tests:
+
+```bash
+python -m pytest -v
+```
+
+The test suite currently contains 23 tests covering email validation, phone validation, duplicate removal, missing values and column mapping.
+
 ## Column Mapping
 
 CleanSheet supports custom column names through:
@@ -129,13 +156,19 @@ Developed as a Python portfolio project to demonstrate data cleaning and automat
 ## Screenshots
 
 ### 1. Data Cleaning Process
-![Terminal Cleaning](screenshots/terminal cleaning.png)
+![Terminal Cleaning](screenshots/terminal-cleaning.png)
 
 ### 2. Cleaning Summary
-![Terminal Summary](screenshots/terminal summary.png)
+![Terminal Summary](screenshots/terminal-summary.png)
 
 ### 3. Excel Output
-![Excel Output](screenshots/excel output.png)
+![Excel Output](screenshots/excel-output.png)
 
-### 4. Column Mapping Configuration
-![Column Mapping](screenshots/column mapping.png)
+### 4. Complete Records
+![Complete Records](screenshots/excel-complete-records.png)
+
+### 5. Incomplete Records
+![Incomplete Records](screenshots/excel-incomplete-records.png)
+
+### 6. Column Mapping Configuration
+![Column Mapping](screenshots/column-mapping.png)

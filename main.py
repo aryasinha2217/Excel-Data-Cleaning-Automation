@@ -4,6 +4,24 @@ from pathlib import Path
 import argparse
 import json
 
+def load_input_file(input_file):
+    input_file = Path(input_file)
+
+    if not input_file.exists():
+        raise FileNotFoundError(f"Input file not found: {input_file}")
+
+    file_extension = input_file.suffix.lower()
+
+    if file_extension == ".csv":
+        return pd.read_csv(input_file)
+
+    elif file_extension == ".xlsx":
+        return pd.read_excel(input_file)
+
+    else:
+        raise ValueError(
+            "Unsupported file format. Please use CSV or XLSX."
+        )
 def remove_duplicate_emails(df):
     df = df.copy()
 
@@ -53,6 +71,31 @@ def split_complete_incomplete(df):
     ]
 
     return df, complete_records, incomplete_records
+
+def apply_column_mapping(df, mapping_file):
+    df = df.copy()
+    mapping_file = Path(mapping_file)
+
+    if not mapping_file.exists():
+        return df
+
+    try:
+        with open(mapping_file, "r", encoding="utf-8") as file:
+            column_mapping = json.load(file)
+
+        if not isinstance(column_mapping, dict):
+            raise ValueError("Column mapping must be a JSON object.")
+
+        df = df.rename(columns=column_mapping)
+
+        return df
+
+    except json.JSONDecodeError:
+        raise ValueError(
+            "Invalid JSON configuration. "
+            "Please check the column mapping file."
+        )
+    
 def main():
 
     
@@ -75,55 +118,18 @@ def main():
 
     input_file = Path(args.input_file)
 
-
-    # Check whether the file exists
-    if not input_file.exists():
-        raise FileNotFoundError(
-            f"Input file not found: {input_file}"
-        )
-
-    # Read the file based on its extension
-    file_extension = input_file.suffix.lower()
-
-    if file_extension == ".csv":
-        df = pd.read_csv(input_file)
-
-    elif file_extension == ".xlsx":
-        df = pd.read_excel(input_file)
-
-    else:
-        raise ValueError(
-            "Unsupported file format. Please use CSV or XLSX."
-        )
+    df = load_input_file(input_file)
     
 
     # ==========================================
     # STAGE 10: LOAD COLUMN MAPPING
     # ========================================== 
+
     mapping_file = Path("config/column_mapping.json")
 
-    if mapping_file.exists():
-        try:
-            with open(mapping_file, "r", encoding="utf-8") as file:
-                column_mapping = json.load(file)
+    df = apply_column_mapping(df, mapping_file)
 
-            if not isinstance(column_mapping, dict):
-                raise ValueError(
-                    "Column mapping must be a JSON object."
-                )
-
-            df = df.rename(columns=column_mapping)
-
-            print("\nColumn mapping loaded successfully!")
-
-        except json.JSONDecodeError:
-            raise ValueError(
-                "Invalid JSON configuration. "
-                "Please check config/column_mapping.json."
-            )
-
-    else:
-        print("\nNo column mapping file found. Using original columns.")
+    print("\nColumn mapping processing completed.")
 
 
     # ==========================================
