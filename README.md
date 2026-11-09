@@ -26,6 +26,8 @@ It helps remove duplicate records, standardise customer information, identify mi
 
 ## Project Structure
 
+
+```text
 CleanSheet/
 ├── config/
 │   └── column_mapping.json
@@ -47,6 +49,7 @@ CleanSheet/
 ├── requirements.txt
 ├── README.md
 └── .gitignore
+```
 
 ## Installation
 
